@@ -1,0 +1,21 @@
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: monthly
+    commit-message:
+      prefix: ci
+
+  # Windows / desktop Linux pins. A PySide6 bump is also a Chromium bump: CI builds all bundles on
+  # the PR; check the smoke tests before merging. (packaging/linux-arm64 is intentionally not
+  # listed: newer PySide6 releases need glibc >= 2.39.)
+  - package-ecosystem: pip
+    directory: /requirements
+    schedule:
+      interval: monthly
+    commit-message:
+      prefix: build
+    groups:
+      pyside6:
+        patterns: ["PySide6*", "shiboken6"]

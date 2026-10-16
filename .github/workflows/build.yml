@@ -1,0 +1,140 @@
+name: Build bundles
+
+# Reusable: builds the Windows x86_64, Linux x86_64 and Linux arm64 one-folder bundles, smoke-tests
+# them, uploads them as workflow artifacts and, when release_tag is set, attaches them to that
+# GitHub Release. The bundles' version comes from the git tags (setuptools-scm), so the checkouts
+# fetch the full history.
+on:
+  workflow_call:
+    inputs:
+      version:
+        description: Version string used in the archive names
+        type: string
+        required: true
+      ref:
+        description: "Git ref to build (default: the triggering commit)"
+        type: string
+        default: ""
+      release_tag:
+        description: "Attach the archives to this GitHub Release (empty = don't)"
+        type: string
+        default: ""
+  workflow_dispatch:
+    inputs:
+      version:
+        type: string
+        default: manual
+      ref:
+        description: "Git ref to build, e.g. a release tag (default: the selected branch)"
+        type: string
+        default: ""
+      release_tag:
+        description: "Attach the archives to this GitHub Release (empty = don't; needs read and write workflow permissions)"
+        type: string
+        default: ""
+
+# No permissions block: ci.yml calls this with contents: read and release.yml with contents: write, and a
+# called workflow may not ask for more than its caller grants. A manual run gets the repository default.
+jobs:
+  windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ inputs.ref }}
+          fetch-depth: 0
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.14"
+      - name: Build
+        shell: pwsh
+        run: ./packaging/windows/build.ps1 -Clean -Python python
+      - name: Smoke test
+        shell: pwsh
+        run: |
+          ./dist/windows-x86_64/kiosk/kioskctl.exe --help | Select-Object -First 1
+          $p = Start-Process ./dist/windows-x86_64/kiosk/kiosk.exe -ArgumentList "--version","--log-file","version.log" -Wait -PassThru
+          Get-Content version.log
+          if ($p.ExitCode -ne 0) { throw "kiosk.exe --version exited with $($p.ExitCode)" }
+          # --log-file prefixes each line with the time and logger ("... INFO    kioskium: kioskium 1.1.0")
+          if ("${{ inputs.release_tag }}" -and (Get-Content version.log -First 1) -notmatch "(^|: )kioskium $([regex]::Escape('${{ inputs.version }}'))$") {
+            throw "the bundle does not report version ${{ inputs.version }}"
+          }
+      - name: Archive
+        shell: pwsh
+        run: Compress-Archive -Path dist/windows-x86_64/kiosk -DestinationPath kioskium-${{ inputs.version }}-windows-x86_64.zip
+      - uses: actions/upload-artifact@v7
+        with:
+          name: kioskium-windows-x86_64
+          path: kioskium-${{ inputs.version }}-windows-x86_64.zip
+          retention-days: 14
+      - name: Attach to release
+        if: inputs.release_tag != ''
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release upload ${{ inputs.release_tag }} kioskium-${{ inputs.version }}-windows-x86_64.zip --clobber
+
+  linux-x86_64:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ inputs.ref }}
+          fetch-depth: 0
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.13"
+      - name: System libraries for Qt
+        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends libegl1 libgl1 libxkbcommon0 libnss3 libasound2t64 libfontconfig1 libdbus-1-3
+      - name: Build
+        run: PYTHON=python bash packaging/linux/build.sh --clean
+      - name: Smoke test
+        env:
+          QT_QPA_PLATFORM: offscreen
+        run: |
+          dist/linux-x86_64/kiosk/kiosk --version | tee version.txt
+          dist/linux-x86_64/kiosk/kioskctl --help | head -1
+          if [ -n "${{ inputs.release_tag }}" ] && [ "$(head -1 version.txt)" != "kioskium ${{ inputs.version }}" ]; then
+            echo "the bundle does not report version ${{ inputs.version }}"; exit 1
+          fi
+      - run: mv dist/linux-x86_64/kiosk-linux-x86_64.tar.gz kioskium-${{ inputs.version }}-linux-x86_64.tar.gz
+      - uses: actions/upload-artifact@v7
+        with:
+          name: kioskium-linux-x86_64
+          path: kioskium-${{ inputs.version }}-linux-x86_64.tar.gz
+          retention-days: 14
+      - name: Attach to release
+        if: inputs.release_tag != ''
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release upload ${{ inputs.release_tag }} kioskium-${{ inputs.version }}-linux-x86_64.tar.gz --clobber
+
+  linux-arm64:
+    # Native arm64 runner: same container as packaging/linux-arm64/build.ps1, without emulation.
+    runs-on: ubuntu-24.04-arm
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ inputs.ref }}
+          fetch-depth: 0
+      - name: Build image
+        run: docker build -t kioskium-build-arm64 -f packaging/linux-arm64/Dockerfile packaging/linux-arm64
+      - name: Build bundle
+        run: docker run --rm -v "$PWD:/src" kioskium-build-arm64
+      - name: Smoke test (in the build container, glibc 2.31)
+        run: |
+          docker run --rm -e QT_QPA_PLATFORM=offscreen -v "$PWD:/src" kioskium-build-arm64 sh -c "dist/linux-arm64/kiosk/kiosk --version && dist/linux-arm64/kiosk/kioskctl --help | head -1" | tee version.txt
+          if [ -n "${{ inputs.release_tag }}" ] && [ "$(head -1 version.txt)" != "kioskium ${{ inputs.version }}" ]; then
+            echo "the bundle does not report version ${{ inputs.version }}"; exit 1
+          fi
+      - run: sudo mv dist/linux-arm64/kiosk-linux-arm64.tar.gz kioskium-${{ inputs.version }}-linux-arm64.tar.gz
+      - uses: actions/upload-artifact@v7
+        with:
+          name: kioskium-linux-arm64
+          path: kioskium-${{ inputs.version }}-linux-arm64.tar.gz
+          retention-days: 14
+      - name: Attach to release
+        if: inputs.release_tag != ''
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release upload ${{ inputs.release_tag }} kioskium-${{ inputs.version }}-linux-arm64.tar.gz --clobber

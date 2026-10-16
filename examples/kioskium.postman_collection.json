@@ -1,0 +1,1516 @@
+{
+  "info": {
+    "_postman_id": "934050c1-8254-5050-88b3-13d234e5ad61",
+    "name": "Kioskium control API",
+    "description": "Drive a running Kioskium browser over its HTTP/JSON control API.\n\n1. Start a browser with a control port, e.g. `kiosk --windowed --control-port 7001 kioskium:test`.\n2. Set the collection variable `baseUrl` (default `http://127.0.0.1:7001`). The API listens on 127.0.0.1 only; for a remote device, tunnel it: `ssh -L 7001:127.0.0.1:7001 user@device`.\n3. If the browser was started with `--control-token`, put the token in the `token` variable. It is sent as `X-Kioskium-Token`; without a configured token the header is ignored.\n\nEvery response is JSON with `ok: true|false`; failures add `error`. Full reference: https://github.com/jerhemy/kioskium/blob/main/docs/API.md",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "apikey",
+    "apikey": [
+      {
+        "key": "key",
+        "value": "X-Kioskium-Token",
+        "type": "string"
+      },
+      {
+        "key": "value",
+        "value": "{{token}}",
+        "type": "string"
+      },
+      {
+        "key": "in",
+        "value": "header",
+        "type": "string"
+      }
+    ]
+  },
+  "item": [
+    {
+      "id": "ecd625da-b780-55cf-9083-b696471a0870",
+      "name": "Status",
+      "description": "Read the state of the running browser.",
+      "item": [
+        {
+          "id": "7e452869-9076-5dbd-91c2-6a7ea5f3d002",
+          "name": "Get status",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/status",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "status"
+              ]
+            },
+            "description": "Instance identity, current and target URL, loading `state` (`idle`, `connecting`, `loading`, `target`), split pane, DevTools / FPS visibility and versions. Also stores `appId` in the collection variables."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "pm.test('ok is true', () => pm.expect(pm.response.json().ok).to.eql(true));",
+                  "const j = pm.response.json();",
+                  "pm.test('has state', () => pm.expect(['idle', 'connecting', 'loading', 'target']).to.include(j.state));",
+                  "pm.collectionVariables.set('appId', j.appId);"
+                ]
+              }
+            }
+          ],
+          "response": [
+            {
+              "name": "200 OK",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/status",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "status"
+                  ]
+                },
+                "description": "Instance identity, current and target URL, loading `state` (`idle`, `connecting`, `loading`, `target`), split pane, DevTools / FPS visibility and versions. Also stores `appId` in the collection variables."
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"ok\": true,\n  \"appId\": \"left-screen\",\n  \"name\": \"left-screen\",\n  \"pid\": 35692,\n  \"url\": \"http://localhost:8080/home\",\n  \"targetUrl\": \"http://localhost:8080/\",\n  \"state\": \"target\",\n  \"loadFailures\": 0,\n  \"split\": null,\n  \"devtools\": false,\n  \"fps\": false,\n  \"kiosk\": true,\n  \"version\": [\n    \"PySide6 6.12.0, Qt 6.12.0, QtWebEngine 6.140.0\",\n    \"Chromium 140.0.7339.225 (security patches up to 152.0.7977.83)\"\n  ]\n}"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "ed94824b-b510-5615-a324-d290f6dc1ef1",
+      "name": "Navigation",
+      "description": "Load pages. Every load goes through the loading screen, which retries until the page is reachable.",
+      "item": [
+        {
+          "id": "cdccb97e-92f1-5972-8aa9-61e4abb3b1b4",
+          "name": "Navigate",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/navigate",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "navigate"
+              ]
+            },
+            "description": "Load a new page in the main pane. The retry loop restarts for the new URL.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"url\": \"{{targetUrl}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "pm.test('ok is true', () => pm.expect(pm.response.json().ok).to.eql(true));"
+                ]
+              }
+            }
+          ],
+          "response": [
+            {
+              "name": "200 OK",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/navigate",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "navigate"
+                  ]
+                },
+                "description": "Load a new page in the main pane. The retry loop restarts for the new URL.",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"url\": \"{{targetUrl}}\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"ok\": true,\n  \"pane\": 1\n}"
+            }
+          ]
+        },
+        {
+          "id": "dd29e334-383c-5eac-8bea-7f674d4da9c4",
+          "name": "Navigate second pane",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/navigate",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "navigate"
+              ]
+            },
+            "description": "Load a page in the second pane of a split. Creates the split if there is none.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"url\": \"{{secondUrl}}\",\n  \"pane\": 2\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "pm.test('ok is true', () => pm.expect(pm.response.json().ok).to.eql(true));"
+                ]
+              }
+            }
+          ],
+          "response": [
+            {
+              "name": "200 OK",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/navigate",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "navigate"
+                  ]
+                },
+                "description": "Load a page in the second pane of a split. Creates the split if there is none.",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"url\": \"{{secondUrl}}\",\n  \"pane\": 2\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"ok\": true,\n  \"pane\": 2\n}"
+            }
+          ]
+        },
+        {
+          "id": "21ad7f72-9c78-5b96-b073-54dc38f30398",
+          "name": "Reload",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/reload",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "reload"
+              ]
+            },
+            "description": "Reload pane 1 (main) or 2 (second pane; 400 if there is no split).",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"pane\": 1\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "pm.test('ok is true', () => pm.expect(pm.response.json().ok).to.eql(true));"
+                ]
+              }
+            }
+          ],
+          "response": [
+            {
+              "name": "200 OK",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/reload",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "reload"
+                  ]
+                },
+                "description": "Reload pane 1 (main) or 2 (second pane; 400 if there is no split).",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"pane\": 1\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"ok\": true,\n  \"pane\": 1\n}"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "39bf9687-4bd4-5504-8a5f-f40182948164",
+      "name": "Split screen",
+      "description": "Two pages in one window, side by side or stacked.",
+      "item": [
+        {
+          "id": "ab86bc8c-9205-5307-91e3-e0f04b17c2fa",
+          "name": "Split",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/split",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "split"
+              ]
+            },
+            "description": "Show a second page. `orientation`: `horizontal` (side by side) or `vertical` (stacked); `ratio`: the first pane's share in percent. Calling it again re-points the second pane.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"url\": \"{{secondUrl}}\",\n  \"orientation\": \"horizontal\",\n  \"ratio\": 50\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "pm.test('ok is true', () => pm.expect(pm.response.json().ok).to.eql(true));"
+                ]
+              }
+            }
+          ],
+          "response": [
+            {
+              "name": "200 OK",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/split",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "split"
+                  ]
+                },
+                "description": "Show a second page. `orientation`: `horizontal` (side by side) or `vertical` (stacked); `ratio`: the first pane's share in percent. Calling it again re-points the second pane.",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"url\": \"{{secondUrl}}\",\n  \"orientation\": \"horizontal\",\n  \"ratio\": 50\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"ok\": true\n}"
+            }
+          ]
+        },
+        {
+          "id": "2eeef3fd-d2d8-56f1-ba80-5ab6fec55d98",
+          "name": "Unsplit",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/unsplit",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "unsplit"
+              ]
+            },
+            "description": "Remove the second pane.",
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "pm.test('ok is true', () => pm.expect(pm.response.json().ok).to.eql(true));"
+                ]
+              }
+            }
+          ],
+          "response": [
+            {
+              "name": "200 OK",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/unsplit",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "unsplit"
+                  ]
+                },
+                "description": "Remove the second pane.",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"ok\": true\n}"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "c54db82b-398c-5dda-b8b0-4329b806400a",
+      "name": "Debugging",
+      "description": "Inspect the page on the device itself.",
+      "item": [
+        {
+          "id": "aba1223d-1423-5a98-a61b-185f140aa971",
+          "name": "DevTools open",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/devtools",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "devtools"
+              ]
+            },
+            "description": "In-window Chromium inspector under the page. Works in kiosk mode. `action`: `open`, `close`, `toggle`.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"action\": \"open\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "pm.test('ok is true', () => pm.expect(pm.response.json().ok).to.eql(true));"
+                ]
+              }
+            }
+          ],
+          "response": [
+            {
+              "name": "200 OK",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/devtools",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "devtools"
+                  ]
+                },
+                "description": "In-window Chromium inspector under the page. Works in kiosk mode. `action`: `open`, `close`, `toggle`.",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"action\": \"open\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"ok\": true,\n  \"devtools\": true\n}"
+            }
+          ]
+        },
+        {
+          "id": "014dd7c0-c705-5736-b8bf-9236b42483e3",
+          "name": "DevTools close",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/devtools",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "devtools"
+              ]
+            },
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"action\": \"close\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "pm.test('ok is true', () => pm.expect(pm.response.json().ok).to.eql(true));"
+                ]
+              }
+            }
+          ],
+          "response": [
+            {
+              "name": "200 OK",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/devtools",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "devtools"
+                  ]
+                },
+                "description": "",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"action\": \"close\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"ok\": true,\n  \"devtools\": false\n}"
+            }
+          ]
+        },
+        {
+          "id": "8a82197c-bdd3-53b0-92a5-86ac6a353996",
+          "name": "FPS overlay on",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/fps",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "fps"
+              ]
+            },
+            "description": "Frame-rate overlay in every pane. `enabled`: `true`, `false` or `\"toggle\"`.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"enabled\": true\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "pm.test('ok is true', () => pm.expect(pm.response.json().ok).to.eql(true));"
+                ]
+              }
+            }
+          ],
+          "response": [
+            {
+              "name": "200 OK",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/fps",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "fps"
+                  ]
+                },
+                "description": "Frame-rate overlay in every pane. `enabled`: `true`, `false` or `\"toggle\"`.",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"enabled\": true\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"ok\": true,\n  \"fps\": true\n}"
+            }
+          ]
+        },
+        {
+          "id": "4f585c7b-58a5-50cf-a880-f11183a7cd1a",
+          "name": "FPS overlay off",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/fps",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "fps"
+              ]
+            },
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"enabled\": false\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "pm.test('ok is true', () => pm.expect(pm.response.json().ok).to.eql(true));"
+                ]
+              }
+            }
+          ],
+          "response": [
+            {
+              "name": "200 OK",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/fps",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "fps"
+                  ]
+                },
+                "description": "",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"enabled\": false\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"ok\": true,\n  \"fps\": false\n}"
+            }
+          ]
+        },
+        {
+          "id": "d35b3543-da32-5f45-b53b-4e284de67dab",
+          "name": "Run JavaScript",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/js",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "js"
+              ]
+            },
+            "description": "Evaluate JavaScript in pane 1 or 2 and return the result (JSON values; anything else as a string).",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"code\": \"document.title\",\n  \"pane\": 1\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "pm.test('ok is true', () => pm.expect(pm.response.json().ok).to.eql(true));",
+                  "pm.test('has result', () => pm.expect(pm.response.json()).to.have.property('result'));"
+                ]
+              }
+            }
+          ],
+          "response": [
+            {
+              "name": "200 OK",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/js",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "js"
+                  ]
+                },
+                "description": "Evaluate JavaScript in pane 1 or 2 and return the result (JSON values; anything else as a string).",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"code\": \"document.title\",\n  \"pane\": 1\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"ok\": true,\n  \"pane\": 1,\n  \"result\": \"My Application\"\n}"
+            }
+          ]
+        },
+        {
+          "id": "4007974b-236a-5a13-a044-28e17fc5102a",
+          "name": "Screenshot",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/screenshot",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "screenshot"
+              ]
+            },
+            "description": "Save a PNG of the whole window. The path is on the machine running the browser; on Windows use forward slashes (`C:/temp/shot.png`) or escaped backslashes, since the body is JSON.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"path\": \"{{screenshotPath}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "pm.test('ok is true', () => pm.expect(pm.response.json().ok).to.eql(true));"
+                ]
+              }
+            }
+          ],
+          "response": [
+            {
+              "name": "200 OK",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/screenshot",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "screenshot"
+                  ]
+                },
+                "description": "Save a PNG of the whole window. The path is on the machine running the browser; on Windows use forward slashes (`C:/temp/shot.png`) or escaped backslashes, since the body is JSON.",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"path\": \"{{screenshotPath}}\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"ok\": true,\n  \"path\": \"/tmp/kioskium.png\"\n}"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "7d8fa5c7-345e-5a16-ae77-7355f29072fd",
+      "name": "Events",
+      "description": "Live Server-Sent Events stream.",
+      "item": [
+        {
+          "id": "7fe50ed1-cb60-57fb-8fe4-6f49e8e80750",
+          "name": "Event stream",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/events?since=0",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "events"
+              ],
+              "query": [
+                {
+                  "key": "since",
+                  "value": "0",
+                  "description": "replay buffered events after this sequence id"
+                }
+              ]
+            },
+            "description": "Keeps the connection open and streams `load`, `navigate`, `crash`, `split`, `unsplit`, `devtools`, `fps` and `quit` events, with a `: ping` comment every 15 s. Postman shows the events as they arrive; press Cancel to stop. Not suited to collection runs."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": []
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "0c9b06af-5258-5d2e-8fc3-52ca11aa7de1",
+      "name": "Errors",
+      "description": "What failures look like. Each request expects an error status.",
+      "item": [
+        {
+          "id": "fe89d584-ba7e-518d-b9d2-031bcc4427c1",
+          "name": "Missing url (400)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/navigate",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "navigate"
+              ]
+            },
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 400', () => pm.response.to.have.status(400));",
+                  "pm.test('error message', () => pm.expect(pm.response.json().error).to.eql('url required'));"
+                ]
+              }
+            }
+          ],
+          "response": [
+            {
+              "name": "400 Bad Request",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/navigate",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "navigate"
+                  ]
+                },
+                "description": "",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "status": "Bad Request",
+              "code": 400,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"ok\": false,\n  \"error\": \"url required\"\n}"
+            }
+          ]
+        },
+        {
+          "id": "7fa97c16-1db5-58d7-bbc1-538efae7edbd",
+          "name": "GET on a POST endpoint (405)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/reload",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "reload"
+              ]
+            },
+            "description": ""
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 405', () => pm.response.to.have.status(405));"
+                ]
+              }
+            }
+          ],
+          "response": [
+            {
+              "name": "405 Method Not Allowed",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/reload",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "reload"
+                  ]
+                },
+                "description": ""
+              },
+              "status": "Method Not Allowed",
+              "code": 405,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"ok\": false,\n  \"error\": \"POST required\"\n}"
+            }
+          ]
+        },
+        {
+          "id": "b9b046e9-09d4-59d0-9d24-6892da588cd0",
+          "name": "Unknown endpoint (404)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/nope",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "nope"
+              ]
+            },
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 404', () => pm.response.to.have.status(404));"
+                ]
+              }
+            }
+          ],
+          "response": [
+            {
+              "name": "404 Not Found",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/nope",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "nope"
+                  ]
+                },
+                "description": "",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "status": "Not Found",
+              "code": 404,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"ok\": false,\n  \"error\": \"unknown endpoint /api/nope\"\n}"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "e3e9940a-1b1b-5e36-b281-bc5bf115791e",
+      "name": "Lifecycle",
+      "description": "",
+      "item": [
+        {
+          "id": "85d7ec0a-b4f4-5443-a0e9-3240076d132f",
+          "name": "Quit",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/quit",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "quit"
+              ]
+            },
+            "description": "Close the browser cleanly (exit code 0). Run it last: nothing answers afterwards.",
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "pm.test('ok is true', () => pm.expect(pm.response.json().ok).to.eql(true));"
+                ]
+              }
+            }
+          ],
+          "response": [
+            {
+              "name": "200 OK",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/quit",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "quit"
+                  ]
+                },
+                "description": "Close the browser cleanly (exit code 0). Run it last: nothing answers afterwards.",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"ok\": true\n}"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://127.0.0.1:7001",
+      "type": "string"
+    },
+    {
+      "key": "token",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "targetUrl",
+      "value": "https://example.com",
+      "type": "string"
+    },
+    {
+      "key": "secondUrl",
+      "value": "https://example.org",
+      "type": "string"
+    },
+    {
+      "key": "screenshotPath",
+      "value": "/tmp/kioskium.png",
+      "type": "string"
+    },
+    {
+      "key": "appId",
+      "value": "",
+      "type": "string"
+    }
+  ]
+}

@@ -1,0 +1,31 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+src/kioskium/_version.py
+.venv/
+venv/
+.pytest_cache/
+.ruff_cache/
+
+# Build output
+build/
+dist/
+*.spec.bak
+
+# Node (semantic-release, CI only)
+node_modules/
+
+# Runtime artefacts
+*.log
+*.png
+!examples/*.png
+!docs/images/*.png
+!src/kioskium/assets/*.png
+
+# Editors / OS
+.idea/
+.vscode/
+*.swp
+.DS_Store
+Thumbs.db

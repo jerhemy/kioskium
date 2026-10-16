@@ -1,0 +1,20 @@
+name: Feature request
+description: Suggest a new flag, API or behaviour
+labels: [enhancement]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: What are you trying to do?
+      description: Describe the use case (the kiosk, the device, the workflow), not only the solution.
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed solution
+      description: A flag, a control-API endpoint, a JavaScript API call...
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Workarounds you have tried

@@ -1,0 +1,12 @@
+{
+  "// keys": "long option names from `kiosk --help`; the command line overrides anything here",
+  "// where": "next to the executable as kioskium.json (picked up automatically), or --config FILE, or env KIOSKIUM_CONFIG",
+  "// shared": "no app-id or URL here, so one file serves every instance (pass --app-id and the URL per instance)",
+
+  "show-cursor-timeout": 3,
+
+  "// logs": "{name} is the instance name (--name, or the app-id), so instances never share a log",
+  "log-file": "/var/log/kioskium/{name}.log",
+  "page-log": "/var/log/kioskium/{name}-page.log",
+  "log-level": "info"
+}

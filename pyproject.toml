@@ -1,0 +1,74 @@
+[build-system]
+requires = ["setuptools>=77", "setuptools-scm>=8"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "kioskium"
+dynamic = ["version"]
+description = "Kiosk-mode web browser on Qt WebEngine (Chromium): lock-down, Wayland app-id screen targeting, split screen and a control API."
+readme = "README.md"
+license = "MIT"
+license-files = ["LICENSE"]
+requires-python = ">=3.9"
+authors = [{ name = "Kioskium contributors" }]
+keywords = ["kiosk", "browser", "chromium", "qtwebengine", "pyside6", "wayland", "embedded", "yocto", "digital-signage"]
+classifiers = [
+    "Development Status :: 5 - Production/Stable",
+    "Environment :: X11 Applications :: Qt",
+    "Environment :: Win32 (MS Windows)",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Manufacturing",
+    "Operating System :: Microsoft :: Windows",
+    "Operating System :: POSIX :: Linux",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3 :: Only",
+    "Topic :: Internet :: WWW/HTTP :: Browsers",
+    "Topic :: System :: Hardware",
+]
+dependencies = [
+    # Qt WebEngine is in PySide6-Addons; the PySide6 meta package pulls both wheels.
+    # Exact versions for reproducible builds: requirements/*.txt
+    "PySide6>=6.8",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8", "ruff>=0.6"]
+build = ["pyinstaller>=6.10"]
+
+[project.scripts]
+kiosk = "kioskium.entry:kiosk"
+kioskctl = "kioskium.entry:kioskctl"
+
+[project.urls]
+Homepage = "https://github.com/jerhemy/kioskium"
+Documentation = "https://github.com/jerhemy/kioskium#readme"
+Issues = "https://github.com/jerhemy/kioskium/issues"
+Changelog = "https://github.com/jerhemy/kioskium/releases"
+
+[tool.setuptools_scm]
+# The version comes from the git tags (v1.2.3), written to this file when the package is built or
+# installed: 1.2.3 on a release tag, e.g. 1.2.4.dev3+g1a2b3c4 after it (+ a date when uncommitted).
+version_file = "src/kioskium/_version.py"
+fallback_version = "0.0.0"  # no git history, e.g. a source zip
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+kioskium = ["pages/*.html", "assets/*.png"]   # built-in pages (kioskium:test, ...) and the window icon
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+
+[tool.ruff]
+target-version = "py39"   # the arm64 device build runs Python 3.9
+line-length = 140
+src = ["src", "tests"]
+extend-exclude = ["packaging/pyinstaller/kioskium.spec"]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "B", "I"]
+
+[tool.ruff.lint.per-file-ignores]
+# One option per line with its help text reads better than wrapped help strings.
+"src/kioskium/cli.py" = ["E501"]

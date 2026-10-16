@@ -1,0 +1,12 @@
+# Exact versions for the desktop Linux x86_64 build and CI (Python 3.12+, glibc >= 2.39).
+#   pip install -r requirements/linux.txt && pip install -e . --no-deps
+PySide6==6.12.0
+PySide6_Addons==6.12.0
+PySide6_Essentials==6.12.0
+PySide6_WebEngine==6.12.0.140
+PySide6_Pdf==6.12.0.140
+shiboken6==6.12.0
+pyinstaller==6.22.3
+pyinstaller-hooks-contrib==2026.8
+pytest==9.1.1
+ruff==0.17.0

@@ -1,0 +1,35 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1080 360" width="1080" height="360" role="img" aria-label="Your software drives Kioskium through its control API; the Chromium page talks to your web app">
+<rect width="1080" height="360" rx="14" fill="#ffffff"/>
+<rect x="14" y="14" width="1052" height="332" rx="12" fill="none" stroke="#d0d7de" stroke-width="1.5" stroke-dasharray="6 5"/>
+<text x="34" y="40" text-anchor="start" font-family="system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif" font-size="13" fill="#59636e">Device or PC</text>
+<rect x="36" y="96" width="180" height="112" rx="10" fill="#f6f8fa" stroke="#d0d7de" stroke-width="1.5"/>
+<text x="126.0" y="148.0" text-anchor="middle" font-family="system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif" font-size="16" font-weight="600" fill="#1f2328">Your software</text>
+<text x="126.0" y="170.0" text-anchor="middle" font-family="system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif" font-size="13" fill="#59636e">service · daemon · script</text>
+<rect x="400" y="48" width="300" height="276" rx="12" fill="#eef5ff" stroke="#4493f8" stroke-width="1.5"/>
+<text x="550" y="76" text-anchor="middle" font-family="system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif" font-size="15" font-weight="700" fill="#0969da">Kioskium</text>
+<rect x="424" y="92" width="252" height="72" rx="8" fill="#ffffff" stroke="#d0d7de" stroke-width="1.5"/>
+<text x="550.0" y="124.0" text-anchor="middle" font-family="system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif" font-size="16" font-weight="600" fill="#1f2328">Control API</text>
+<text x="550.0" y="146.0" text-anchor="middle" font-family="system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif" font-size="13" fill="#59636e">127.0.0.1:PORT · Unix socket</text>
+<rect x="424" y="228" width="252" height="72" rx="8" fill="#ffffff" stroke="#d0d7de" stroke-width="1.5"/>
+<text x="550.0" y="260.0" text-anchor="middle" font-family="system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif" font-size="16" font-weight="600" fill="#1f2328">Chromium page</text>
+<text x="550.0" y="282.0" text-anchor="middle" font-family="system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif" font-size="13" fill="#59636e">fullscreen · locked down</text>
+<rect x="874" y="208" width="170" height="112" rx="10" fill="#f6f8fa" stroke="#d0d7de" stroke-width="1.5"/>
+<text x="959.0" y="260.0" text-anchor="middle" font-family="system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif" font-size="16" font-weight="600" fill="#1f2328">Your web app</text>
+<text x="959.0" y="282.0" text-anchor="middle" font-family="system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif" font-size="13" fill="#59636e">local or remote server</text>
+<line x1="216" y1="116" x2="422" y2="116" stroke="#0969da" stroke-width="2"/>
+<path d="M422 116 L412 111 L412 121 Z" fill="#0969da"/>
+<text x="319" y="106" text-anchor="middle" font-family="system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif" font-size="13" fill="#1f2328">HTTP/JSON commands</text>
+<line x1="424" y1="146" x2="218" y2="146" stroke="#59636e" stroke-width="2"/>
+<path d="M218 146 L228 141 L228 151 Z" fill="#59636e"/>
+<text x="319" y="168" text-anchor="middle" font-family="system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif" font-size="13" fill="#59636e">live events (SSE)</text>
+<line x1="490" y1="164" x2="490" y2="226" stroke="#0969da" stroke-width="2"/>
+<path d="M490 226 L485 216 L495 216 Z" fill="#0969da"/>
+<text x="500" y="192" text-anchor="start" font-family="system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif" font-size="13" fill="#59636e">drives</text>
+<line x1="614" y1="228" x2="614" y2="166" stroke="#59636e" stroke-width="2" stroke-dasharray="5 4"/>
+<path d="M614 166 L609 176 L619 176 Z" fill="#59636e"/>
+<text x="606" y="212" text-anchor="end" font-family="ui-monospace, SFMono-Regular, Consolas, Menlo, monospace" font-size="13" fill="#59636e">window.kioskium</text>
+<line x1="678" y1="264" x2="872" y2="264" stroke="#59636e" stroke-width="2"/>
+<path d="M872 264 L862 259 L862 269 Z" fill="#59636e"/>
+<path d="M678 264 L688 259 L688 269 Z" fill="#59636e"/>
+<text x="775" y="254" text-anchor="middle" font-family="system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif" font-size="13" fill="#59636e">HTTP / WebSocket</text>
+</svg>

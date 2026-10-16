@@ -1,0 +1,452 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Kioskium diagnostics</title>
+<style>
+  :root {
+    --bg: #0d1117; --card: #161b22; --card-2: #1c2129; --border: #30363d; --border-soft: #21262d;
+    --text: #e6edf3; --muted: #8b949e; --faint: #6e7681;
+    --accent: #58a6ff; --violet: #bc8cff; --green: #3fb950; --amber: #d29922; --red: #f85149;
+    --radius: 12px;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; min-height: 100%; background: var(--bg); color: var(--text);
+               font: 15px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+  body { padding: 20px 24px 24px; }
+  code, .mono { font: 13px ui-monospace, "Cascadia Mono", Consolas, monospace; }
+
+  /* header */
+  header { display: flex; align-items: center; gap: 14px; margin-bottom: 18px; }
+  .logo { width: 48px; height: 48px; flex: none; margin: -6px -4px -6px -6px; }
+  .brand h1 { margin: 0; font-size: 20px; font-weight: 650; letter-spacing: -0.01em; }
+  .brand p { margin: 0; color: var(--muted); font-size: 13px; }
+  .chips { margin-left: auto; display: flex; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
+  .chip { display: inline-flex; align-items: center; gap: 7px; padding: 5px 11px; border-radius: 999px;
+          background: var(--card); border: 1px solid var(--border); font-size: 13px; color: var(--muted); white-space: nowrap; }
+  .chip b { color: var(--text); font-weight: 550; }
+  .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--faint); }
+  .dot.ok { background: var(--green); box-shadow: 0 0 0 3px rgba(63,185,80,.18); }
+  .dot.warn { background: var(--amber); }
+
+  /* grid of cards */
+  .grid { display: grid; gap: 16px; grid-template-columns: repeat(3, minmax(0, 1fr)); grid-auto-flow: row dense; }
+  .span-2 { grid-column: span 2; }
+  @media (max-width: 980px) { .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+  @media (max-width: 660px) { .grid { grid-template-columns: minmax(0, 1fr); } .span-2 { grid-column: auto; } body { padding: 16px; }
+                              header { flex-wrap: wrap; } .chips { margin-left: 0; justify-content: flex-start; } }
+
+  .card { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px 18px; min-width: 0; }
+  .card h2 { display: flex; align-items: center; gap: 8px; margin: 0 0 12px; font-size: 13px; font-weight: 600;
+             text-transform: uppercase; letter-spacing: .06em; color: var(--muted); }
+  .card h2 svg { width: 16px; height: 16px; color: var(--accent); }
+  .card h2 .right { margin-left: auto; text-transform: none; letter-spacing: 0; font-weight: 500; }
+
+  dl { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 7px 16px; margin: 0; }
+  dt { color: var(--muted); white-space: nowrap; }
+  dd { margin: 0; text-align: right; font-variant-numeric: tabular-nums; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .ua { margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--border-soft); color: var(--muted);
+        display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; word-break: break-all; }
+
+  .badge { display: inline-block; padding: 1px 9px; border-radius: 999px; font-size: 12.5px; font-weight: 600; }
+  .badge.ok { color: var(--green); background: rgba(63,185,80,.12); }
+  .badge.bad { color: var(--red); background: rgba(248,81,73,.12); }
+
+  /* rendering card */
+  .render-top { display: flex; align-items: center; gap: 18px; margin-bottom: 12px; }
+  canvas.cube { width: 104px; height: 104px; flex: none; margin: -14px -6px -14px -12px; }
+  .orb { position: relative; width: 64px; height: 64px; flex: none; }
+  .orb[hidden] { display: none; }
+  .orb::before, .orb::after { content: ""; position: absolute; inset: 0; border-radius: 50%; will-change: transform; }
+  .orb::before { background: conic-gradient(from 0deg, var(--accent), var(--violet), transparent 70%); animation: spin 1.6s linear infinite;
+                 -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 7px), #000 calc(100% - 6px)); }
+  .orb::after { inset: 18px; background: radial-gradient(circle at 35% 35%, #9ecbff, var(--accent) 60%, #1f6feb); animation: pulse 2.4s ease-in-out infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  @keyframes pulse { 50% { transform: scale(.82); } }
+  .fps-big { font-size: 34px; font-weight: 650; line-height: 1; font-variant-numeric: tabular-nums; letter-spacing: -0.02em; }
+  .fps-big small { font-size: 14px; font-weight: 500; color: var(--muted); margin-left: 4px; letter-spacing: 0; }
+  .fps-sub { color: var(--muted); font-size: 13px; margin-top: 4px; }
+  canvas.spark { display: block; width: 100%; height: 44px; margin-bottom: 12px; }
+
+  /* buttons */
+  .buttons { display: grid; gap: 8px; grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  .buttons.two { grid-template-columns: 1fr 1fr; }
+  @media (max-width: 660px) { .buttons { grid-template-columns: 1fr 1fr; } }
+  .check { flex-direction: column; align-items: flex-start; gap: 1px; }
+  .check span { font-weight: 550; }
+  .check code { font-size: 12px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
+  button { font: inherit; font-size: 14px; padding: 9px 12px; border-radius: 8px; border: 1px solid var(--border);
+           background: var(--card-2); color: var(--text); cursor: pointer; text-align: left;
+           display: flex; align-items: center; gap: 8px; transition: border-color .15s, background .15s; }
+  button:hover { border-color: #484f58; background: #22272e; }
+  button:active { background: #2d333b; }
+  button:disabled { opacity: .45; cursor: not-allowed; }
+  button .ic { width: 15px; height: 15px; color: var(--muted); flex: none; }
+  button.on { border-color: var(--accent); }
+  button.on .ic { color: var(--accent); }
+
+  .result { margin-top: 12px; padding: 11px 14px; border-radius: 8px; background: var(--bg); border: 1px solid var(--border-soft);
+            color: var(--muted); font-size: 14px; display: flex; gap: 10px; align-items: flex-start; min-height: 46px; }
+  .result::before { content: ""; flex: none; width: 8px; height: 8px; margin-top: 7px; border-radius: 50%; background: var(--faint); }
+  .result.blocked { color: var(--text); border-color: rgba(210,153,34,.45); }
+  .result.blocked::before { background: var(--amber); }
+  .result.allowed { color: var(--text); border-color: rgba(63,185,80,.45); }
+  .result.allowed::before { background: var(--green); }
+  .result code { color: var(--accent); font-size: 13px; }
+  .note { margin: 10px 0 0; color: var(--faint); font-size: 13px; }
+</style>
+</head>
+<body>
+
+<header>
+  <img class="logo" src="../assets/kioskium-icon.png" alt="" aria-hidden="true">
+  <div class="brand">
+    <h1>Kioskium diagnostics</h1>
+    <p>Rendering, display and kiosk checks for this screen</p>
+  </div>
+  <div class="chips">
+    <span class="chip"><span class="dot" id="bridge-dot"></span><span id="bridge-text">Bridge: checking…</span></span>
+    <span class="chip">App ID <b id="chip-app">–</b></span>
+    <span class="chip"><b id="clock" class="mono">--:--:--</b></span>
+  </div>
+</header>
+
+<main class="grid">
+
+  <!-- Rendering -->
+  <section class="card">
+    <h2>
+      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="2" y="3" width="12" height="9" rx="1.5"/><path d="M5 14h6"/></svg>
+      Rendering <span class="right" id="hw"></span>
+    </h2>
+    <div class="render-top">
+      <canvas class="cube" id="cube" aria-label="WebGL cube rendered by the GPU"></canvas>
+      <div class="orb" id="orb" aria-hidden="true" hidden></div>
+      <div>
+        <div class="fps-big"><span id="fps-now">–</span><small>fps</small></div>
+        <div class="fps-sub">min <span id="fps-min">–</span> · avg <span id="fps-avg">–</span> (last 20 s)</div>
+      </div>
+    </div>
+    <canvas class="spark" id="spark" aria-label="frame rate history"></canvas>
+    <dl>
+      <dt>WebGL renderer</dt><dd id="gl"></dd>
+      <dt>WebGL</dt><dd id="glver"></dd>
+    </dl>
+  </section>
+
+  <!-- Display -->
+  <section class="card">
+    <h2>
+      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="1.5" y="2.5" width="13" height="9" rx="1.5"/><path d="M8 11.5v2M5 13.5h6"/></svg>
+      Display &amp; input
+    </h2>
+    <dl>
+      <dt>Viewport</dt><dd id="vp"></dd>
+      <dt>Screen</dt><dd id="scr"></dd>
+      <dt>Device pixel ratio</dt><dd id="dpr"></dd>
+      <dt>Colour depth</dt><dd id="depth"></dd>
+      <dt>Orientation</dt><dd id="orient"></dd>
+      <dt>Pointer</dt><dd id="pointer"></dd>
+      <dt>Touch points</dt><dd id="touch"></dd>
+      <dt>Fullscreen API</dt><dd id="fs"></dd>
+    </dl>
+  </section>
+
+  <!-- Runtime -->
+  <section class="card">
+    <h2>
+      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="8" cy="8" r="6"/><path d="M8 4.5V8l2.5 1.5"/></svg>
+      Runtime
+    </h2>
+    <dl>
+      <dt>Kioskium</dt><dd id="v-kioskium">–</dd>
+      <dt>Chromium</dt><dd id="v-chromium">–</dd>
+      <dt>Qt / PySide6</dt><dd id="v-qt">–</dd>
+      <dt>Python</dt><dd id="v-python">–</dd>
+      <dt>Language</dt><dd id="lang"></dd>
+      <dt>Network</dt><dd id="net"></dd>
+      <dt>Page loaded</dt><dd id="loaded"></dd>
+    </dl>
+    <div class="ua mono" id="ua"></div>
+  </section>
+
+  <!-- Lock-down checks -->
+  <section class="card span-2">
+    <h2>
+      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="7" width="10" height="7" rx="1.5"/><path d="M5.5 7V5a2.5 2.5 0 0 1 5 0v2"/></svg>
+      Kiosk lock-down
+      <span class="right">each button reports what happened</span>
+    </h2>
+    <div class="buttons">
+      <button class="check" onclick="testAlert()"><span>Alert</span><code>alert()</code></button>
+      <button class="check" onclick="testConfirm()"><span>Confirm</span><code>confirm()</code></button>
+      <button class="check" onclick="testPrompt()"><span>Prompt</span><code>prompt()</code></button>
+      <button class="check" onclick="testOpen()"><span>Popup window</span><code>window.open()</code></button>
+      <button class="check" onclick="testClose()"><span>Close window</span><code>window.close()</code></button>
+      <button class="check" onclick="testFullscreen()"><span>Fullscreen</span><code>requestFullscreen()</code></button>
+      <button class="check" onclick="testNavigate()"><span>Navigate away</span><code>example.org</code></button>
+      <button class="check" onclick="testSelect()"><span>Select text</span><code>user-select</code></button>
+    </div>
+    <div class="result" id="result"><span id="result-text">Pick a check. Kiosk mode blocks dialogs, popups and closing the window unless a flag allows them.</span></div>
+  </section>
+
+  <!-- Controls via window.kioskium -->
+  <section class="card">
+    <h2>
+      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M2 4h8M12 4h2M2 12h2M6 12h8"/><circle cx="11" cy="4" r="1.6"/><circle cx="5" cy="12" r="1.6"/></svg>
+      Browser controls
+      <span class="right mono">window.kioskium</span>
+    </h2>
+    <div class="buttons two">
+      <button class="api" onclick="ctl('devtools')"><svg class="ic" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M5.5 4.5 2 8l3.5 3.5M10.5 4.5 14 8l-3.5 3.5"/></svg>DevTools</button>
+      <button class="api" id="btn-fps" onclick="ctl('fps')"><svg class="ic" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M2 12l3.5-4 3 2.5L14 4"/></svg>FPS overlay</button>
+      <button class="api" id="btn-split" onclick="ctl('split')"><svg class="ic" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="2" y="3" width="12" height="10" rx="1.5"/><path d="M8 3v10"/></svg>Split screen</button>
+      <button class="api" onclick="ctl('reload')"><svg class="ic" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M13 8a5 5 0 1 1-1.5-3.5M13 2.5v3h-3"/></svg>Reload</button>
+    </div>
+    <p class="note" id="ctl-note">The page drives the browser through its JavaScript bridge; other programs use the control API.</p>
+  </section>
+
+</main>
+
+<script>
+  const $ = id => document.getElementById(id);
+  const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+
+  // ---- static facts -------------------------------------------------------------------------
+  function refreshDisplay() {
+    $('vp').textContent = innerWidth + ' × ' + innerHeight;
+    $('scr').textContent = screen.width + ' × ' + screen.height;
+    $('dpr').textContent = devicePixelRatio;
+    $('orient').textContent = (screen.orientation && screen.orientation.type || '–').replace('-primary', '').replace('-secondary', ' (flipped)');
+  }
+  refreshDisplay();
+  addEventListener('resize', refreshDisplay);
+  $('depth').textContent = screen.colorDepth + '-bit';
+  $('pointer').textContent = matchMedia('(pointer: coarse)').matches ? 'touch (coarse)' : matchMedia('(pointer: fine)').matches ? 'mouse (fine)' : 'none';
+  $('touch').textContent = navigator.maxTouchPoints;
+  $('fs').textContent = document.fullscreenEnabled ? 'enabled' : 'disabled';
+  $('lang').textContent = navigator.language;
+  const net = () => { $('net').innerHTML = navigator.onLine ? '<span class="badge ok">online</span>' : '<span class="badge bad">offline</span>'; };
+  net(); addEventListener('online', net); addEventListener('offline', net);
+  $('loaded').textContent = new Date().toLocaleTimeString();
+  $('ua').textContent = navigator.userAgent;
+  const chrome = navigator.userAgent.match(/Chrome\/([\d.]+)/), qtwe = navigator.userAgent.match(/QtWebEngine\/([\d.]+)/);
+  if (chrome) $('v-chromium').textContent = chrome[1];
+  if (qtwe) $('v-qt').textContent = 'QtWebEngine ' + qtwe[1];
+  const tickClock = () => { $('clock').textContent = new Date().toLocaleTimeString([], { hour12: false }); };
+  tickClock(); setInterval(tickClock, 1000);
+
+  // ---- GPU ----------------------------------------------------------------------------------
+  try {
+    const c = document.createElement('canvas');
+    const gl2 = c.getContext('webgl2');
+    const gl = gl2 || c.getContext('webgl');
+    const dbg = gl && gl.getExtension('WEBGL_debug_renderer_info');
+    const renderer = dbg ? gl.getParameter(dbg.UNMASKED_RENDERER_WEBGL) : (gl ? gl.getParameter(gl.RENDERER) : 'no WebGL');
+    $('gl').textContent = renderer.replace(/^ANGLE \((.*)\)$/, '$1');
+    $('gl').title = renderer;
+    $('glver').textContent = gl2 ? 'WebGL 2' : gl ? 'WebGL 1' : 'unavailable';
+    const software = /swiftshader|llvmpipe|software|mesa offscreen/i.test(renderer) || !gl;
+    $('hw').innerHTML = software ? '<span class="badge bad">software rendering</span>' : '<span class="badge ok">GPU accelerated</span>';
+    console.log('kioskium-test: renderer=' + renderer + ' hw=' + !software);
+  } catch (e) { $('gl').textContent = 'error: ' + e; }
+
+  // ---- WebGL scene: a lit, rotating cube drawn by the GPU every frame -------------------------
+  (function cube() {
+    const cv = $('cube'), r = devicePixelRatio || 1;
+    cv.width = Math.round(104 * r); cv.height = Math.round(104 * r);
+    const gl = cv.getContext('webgl', { antialias: true, alpha: true, premultipliedAlpha: false });
+    if (!gl) { cv.hidden = true; cv.style.display = 'none'; $('orb').hidden = false; return; }
+    const shader = (type, src) => { const s = gl.createShader(type); gl.shaderSource(s, src); gl.compileShader(s); return s; };
+    const prog = gl.createProgram();
+    gl.attachShader(prog, shader(gl.VERTEX_SHADER, `
+      attribute vec3 pos; attribute vec3 nrm; attribute vec3 col;
+      uniform mat4 model; uniform mat4 proj;
+      varying vec3 vCol; varying float vLight;
+      void main() {
+        vec3 n = normalize(mat3(model) * nrm);
+        vLight = max(dot(n, normalize(vec3(0.5, 0.8, 1.0))), 0.0);
+        vCol = col;
+        gl_Position = proj * model * vec4(pos, 1.0);
+      }`));
+    gl.attachShader(prog, shader(gl.FRAGMENT_SHADER, `
+      precision mediump float;
+      varying vec3 vCol; varying float vLight;
+      void main() { gl_FragColor = vec4(vCol * (0.25 + 0.9 * vLight), 1.0); }`));
+    gl.linkProgram(prog); gl.useProgram(prog);
+
+    // 6 faces x 2 triangles; each face shaded from blue to violet
+    const faces = [[[1,0,0],[0,1,0],[0,0,1]], [[-1,0,0],[0,1,0],[0,0,-1]], [[0,1,0],[0,0,1],[1,0,0]],
+                   [[0,-1,0],[0,0,-1],[1,0,0]], [[0,0,1],[1,0,0],[0,1,0]], [[0,0,-1],[-1,0,0],[0,1,0]]];
+    const blue = [0.345, 0.651, 1.0], violet = [0.737, 0.549, 1.0];
+    const data = [];
+    faces.forEach(([n, u, v], f) => {
+      const corner = (a, b) => n.map((x, i) => (x + a * u[i] + b * v[i]) * 0.62);
+      const quad = [[-1,-1],[1,-1],[1,1],[-1,-1],[1,1],[-1,1]];
+      quad.forEach(([a, b]) => {
+        const k = (a + b + 2) / 4 * 0.6 + f / 5 * 0.4;
+        data.push(...corner(a, b), ...n, ...blue.map((c, i) => c + (violet[i] - c) * k));
+      });
+    });
+    gl.bindBuffer(gl.ARRAY_BUFFER, gl.createBuffer());
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(data), gl.STATIC_DRAW);
+    [['pos', 0], ['nrm', 3], ['col', 6]].forEach(([name, off]) => {
+      const loc = gl.getAttribLocation(prog, name);
+      gl.enableVertexAttribArray(loc); gl.vertexAttribPointer(loc, 3, gl.FLOAT, false, 36, off * 4);
+    });
+    const f = 1 / Math.tan(Math.PI / 8), near = 0.1, far = 10;
+    gl.uniformMatrix4fv(gl.getUniformLocation(prog, 'proj'), false,
+      [f, 0, 0, 0, 0, f, 0, 0, 0, 0, (far + near) / (near - far), -1, 0, 0, 2 * far * near / (near - far), 0]);
+    const uModel = gl.getUniformLocation(prog, 'model');
+    gl.enable(gl.DEPTH_TEST); gl.viewport(0, 0, cv.width, cv.height); gl.clearColor(0, 0, 0, 0);
+    function draw(t) {
+      // model = translate(0,0,-3.2) * rotX(tilt) * rotY(spin): a steady tilt keeps three faces in view
+      const a = t / 1600, b = 0.55 + 0.25 * Math.sin(t / 2100);
+      const ca = Math.cos(a), sa = Math.sin(a), cb = Math.cos(b), sb = Math.sin(b);
+      gl.uniformMatrix4fv(uModel, false, [ca, sb * sa, -cb * sa, 0,  0, cb, sb, 0,  sa, -sb * ca, cb * ca, 0,  0, 0, -3.2, 1]);
+      gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+      gl.drawArrays(gl.TRIANGLES, 0, 36);
+      requestAnimationFrame(draw);
+    }
+    requestAnimationFrame(draw);
+  })();
+
+  // ---- frame rate: sampled every 500 ms, 20 s history ------------------------------------
+  const samples = [];
+  let frames = 0, t0 = performance.now(), firstReport = true;
+  function frame(t) {
+    frames++;
+    if (t - t0 >= 500) {
+      const fps = frames * 1000 / (t - t0);
+      frames = 0; t0 = t;
+      samples.push(fps); if (samples.length > 40) samples.shift();
+      $('fps-now').textContent = Math.round(fps);
+      $('fps-min').textContent = Math.round(Math.min(...samples));
+      $('fps-avg').textContent = Math.round(samples.reduce((a, b) => a + b, 0) / samples.length);
+      drawSpark();
+      if (firstReport && samples.length >= 4) { firstReport = false; console.log('kioskium-test: fps=' + fps.toFixed(1)); }
+    }
+    requestAnimationFrame(frame);
+  }
+  requestAnimationFrame(frame);
+
+  function drawSpark() {
+    const cv = $('spark'), r = devicePixelRatio || 1;
+    const w = cv.clientWidth, h = cv.clientHeight;
+    if (cv.width !== Math.round(w * r)) { cv.width = Math.round(w * r); cv.height = Math.round(h * r); }
+    const g = cv.getContext('2d');
+    g.setTransform(r, 0, 0, r, 0, 0);
+    g.clearRect(0, 0, w, h);
+    const top = Math.max(65, ...samples), n = 40;
+    const x = i => (i + n - samples.length) * (w / (n - 1)), y = v => h - 3 - (v / top) * (h - 8);
+    g.strokeStyle = '#30363d'; g.setLineDash([3, 4]); g.lineWidth = 1;
+    g.beginPath(); g.moveTo(0, y(60)); g.lineTo(w, y(60)); g.stroke(); g.setLineDash([]);
+    if (samples.length < 2) return;
+    const grad = g.createLinearGradient(0, 0, 0, h);
+    grad.addColorStop(0, 'rgba(88,166,255,.35)'); grad.addColorStop(1, 'rgba(88,166,255,0)');
+    g.beginPath(); g.moveTo(x(0), h);
+    samples.forEach((v, i) => g.lineTo(x(i), y(v)));
+    g.lineTo(x(samples.length - 1), h); g.closePath(); g.fillStyle = grad; g.fill();
+    g.beginPath(); samples.forEach((v, i) => i ? g.lineTo(x(i), y(v)) : g.moveTo(x(i), y(v)));
+    g.strokeStyle = '#58a6ff'; g.lineWidth = 2; g.lineJoin = 'round'; g.stroke();
+  }
+
+  // ---- Kioskium bridge ----------------------------------------------------------------------
+  let bridge = null, fpsOn = false, splitOn = false;
+  function onBridge() {
+    bridge = window.kioskium;
+    $('bridge-dot').className = 'dot ok';
+    $('bridge-text').textContent = 'Bridge connected';
+    bridge.info().then(j => {
+      const info = JSON.parse(j), v = (info.version || []).join('\n');
+      $('chip-app').textContent = info.appId || '–';
+      const k = v.match(/kioskium ([\w.+-]+)/i); if (k) $('v-kioskium').textContent = k[1];
+      const q = v.match(/PySide6 ([\d.]+)/); if (q) $('v-qt').textContent = q[1] + (qtwe ? ' · WebEngine ' + qtwe[1] : '');
+      const c = v.match(/Chromium ([\d.]+)/); if (c) $('v-chromium').textContent = c[1];
+      const p = v.match(/Python ([\d.]+)/); if (p) $('v-python').textContent = p[1];
+    });
+  }
+  function noBridge() {
+    $('bridge-dot').className = 'dot warn';
+    $('bridge-text').textContent = 'No bridge';
+    document.querySelectorAll('button.api').forEach(b => b.disabled = true);
+    $('ctl-note').textContent = 'window.kioskium is not available: this page is not running in Kioskium, or it was started with --no-js-api.';
+  }
+  if (window.kioskium) onBridge();
+  else {
+    document.addEventListener('kioskiumReady', onBridge, { once: true });
+    setTimeout(() => { if (!bridge) noBridge(); }, 2500);
+  }
+
+  function ctl(what) {
+    if (!bridge) return;
+    if (what === 'devtools') bridge.toggleDevTools();
+    if (what === 'reload') bridge.reload();
+    if (what === 'fps') { fpsOn = !fpsOn; bridge.showFps(fpsOn); $('btn-fps').classList.toggle('on', fpsOn); }
+    if (what === 'split') {
+      splitOn = !splitOn;
+      if (splitOn) bridge.splitWith('kioskium:input', 'horizontal', 55); else bridge.unsplit();
+      $('btn-split').classList.toggle('on', splitOn);
+    }
+  }
+
+  // ---- lock-down checks ---------------------------------------------------------------------
+  // Kioskium answers blocked dialogs immediately, so a dialog that returns within a few
+  // milliseconds was never shown; one a person dismissed takes far longer.
+  const AUTO_MS = 100;
+  function report(kind, html) {
+    $('result').className = 'result ' + kind;
+    $('result-text').innerHTML = html;
+    console.log('kioskium-test: ' + $('result-text').textContent);
+  }
+  function timed(fn) { const t = performance.now(); const value = fn(); return [value, performance.now() - t]; }
+
+  function testAlert() {
+    const [, ms] = timed(() => alert('alert from page'));
+    if (ms < AUTO_MS) report('blocked', '<b>alert()</b> was blocked: dismissed without showing (kiosk default). Start with <code>--allow-dialogs</code> to show it.');
+    else report('allowed', '<b>alert()</b> was shown and closed.');
+  }
+  function testConfirm() {
+    const [ok, ms] = timed(() => confirm('confirm from page'));
+    if (ms < AUTO_MS && !ok) report('blocked', '<b>confirm()</b> was blocked: answered “Cancel” without showing (kiosk default). Start with <code>--allow-dialogs</code> to show it.');
+    else report('allowed', '<b>confirm()</b> was shown; answer: <b>' + (ok ? 'OK' : 'Cancel') + '</b>.');
+  }
+  function testPrompt() {
+    const [text, ms] = timed(() => prompt('prompt from page', 'hello'));
+    if (ms < AUTO_MS && text === null) report('blocked', '<b>prompt()</b> was blocked: cancelled without showing (kiosk default). Start with <code>--allow-dialogs</code> to show it.');
+    else report('allowed', '<b>prompt()</b> was shown; answer: <b>' + (text === null ? '(cancelled)' : esc(text)) + '</b>.');
+  }
+  function testOpen() {
+    report('blocked', '<b>window.open()</b>: popups open in this same view by default, so example.com replaces this page in a moment. ' +
+           'Start with <code>--allow-new-windows</code> to open them in a new window.');
+    setTimeout(() => window.open('https://example.com', '_blank'), 2000);
+  }
+  function testClose() {
+    window.close();
+    setTimeout(() => report('blocked', '<b>window.close()</b> was ignored: pages cannot close the kiosk. ' +
+      'Quit with <code>kioskctl quit</code>, <code>POST /api/quit</code> or a key set with <code>--exit-shortcut</code>.'), 300);
+  }
+  function testFullscreen() {
+    if (document.fullscreenElement) { document.exitFullscreen(); report('allowed', 'Left page fullscreen.'); return; }
+    document.documentElement.requestFullscreen()
+      .then(() => report('allowed', '<b>requestFullscreen()</b> worked: the page fills the window. Click again to leave.'))
+      .catch(e => report('blocked', '<b>requestFullscreen()</b> was refused: ' + esc(e.message)));
+  }
+  function testNavigate() {
+    report('', 'Navigating to https://example.org/ … If this page is still here after a few seconds, the site is not in the ' +
+           '<code>--allow-host</code> list. An unreachable site shows the loading screen instead.');
+    location.href = 'https://example.org/';
+    setTimeout(() => report('blocked', 'Navigation to example.org was blocked: it is not in the <code>--allow-host</code> list.'), 3000);
+  }
+  function testSelect() {
+    const sel = getSelection(); sel.removeAllRanges();
+    const range = document.createRange(); range.selectNodeContents(document.querySelector('.brand p')); sel.addRange(range);
+    const style = getComputedStyle(document.body).userSelect || getComputedStyle(document.body).webkitUserSelect;
+    if (style === 'none') report('blocked', '<b>Text selection</b> is off (kiosk default): no highlighting or long-press handles; form fields stay editable. ' +
+                                 'Start with <code>--text-selection</code> to allow it.');
+    else report('allowed', '<b>Text selection</b> is allowed: the header subtitle is now selected.');
+  }
+</script>
+</body>
+</html>

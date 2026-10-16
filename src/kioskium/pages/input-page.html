@@ -1,0 +1,192 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Kioskium input test</title>
+<style>
+  :root {
+    --bg: #0d1117; --card: #161b22; --card-2: #1c2129; --border: #30363d; --border-soft: #21262d;
+    --text: #e6edf3; --muted: #8b949e; --faint: #6e7681;
+    --accent: #58a6ff; --violet: #bc8cff; --green: #3fb950; --amber: #d29922;
+    --radius: 12px;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; min-height: 100%; background: var(--bg); color: var(--text);
+               font: 15px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+  body { padding: 20px 24px 24px; }
+  code, .mono { font: 13px ui-monospace, "Cascadia Mono", Consolas, monospace; }
+
+  header { display: flex; align-items: center; gap: 14px; margin-bottom: 18px; }
+  .logo { width: 48px; height: 48px; flex: none; margin: -6px -4px -6px -6px; }
+  .brand h1 { margin: 0; font-size: 20px; font-weight: 650; letter-spacing: -0.01em; }
+  .brand p { margin: 0; color: var(--muted); font-size: 13px; }
+  .chips { margin-left: auto; display: flex; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
+  .chip { display: inline-flex; align-items: center; gap: 7px; padding: 5px 11px; border-radius: 999px;
+          background: var(--card); border: 1px solid var(--border); font-size: 13px; color: var(--muted); white-space: nowrap; }
+  .chip b { color: var(--text); font-weight: 550; }
+  .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--faint); }
+  .dot.on { background: var(--green); box-shadow: 0 0 0 3px rgba(63,185,80,.18); }
+
+  .grid { display: grid; gap: 16px; grid-template-columns: repeat(3, minmax(0, 1fr)); grid-auto-flow: row dense; }
+  .span-2 { grid-column: span 2; }
+  @media (max-width: 980px) { .grid { grid-template-columns: minmax(0, 1fr); } .span-2 { grid-column: auto; } }
+  @media (max-width: 660px) { body { padding: 16px; } header { flex-wrap: wrap; } .chips { margin-left: 0; justify-content: flex-start; } }
+
+  .card { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px 18px; min-width: 0; }
+  .card h2 { display: flex; align-items: center; gap: 8px; margin: 0 0 12px; font-size: 13px; font-weight: 600;
+             text-transform: uppercase; letter-spacing: .06em; color: var(--muted); }
+  .card h2 svg { width: 16px; height: 16px; color: var(--accent); }
+  .card h2 .right { margin-left: auto; text-transform: none; letter-spacing: 0; font-weight: 500; }
+
+  /* form fields */
+  .fields { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px 18px; }
+  @media (max-width: 660px) { .fields { grid-template-columns: minmax(0, 1fr); } }
+  .field { display: flex; flex-direction: column; gap: 5px; min-width: 0; }
+  .field.wide { grid-column: 1 / -1; }
+  .field span { display: flex; justify-content: space-between; gap: 8px; font-size: 13px; color: var(--muted); }
+  .field span code { font-size: 12px; color: var(--faint); }
+  input, textarea, select { font: inherit; font-size: 16px; padding: 10px 12px; border-radius: 8px; width: 100%;
+      border: 1px solid var(--border); background: var(--bg); color: var(--text); min-height: 44px;
+      transition: border-color .15s, box-shadow .15s; }
+  input::placeholder, textarea::placeholder { color: var(--faint); }
+  input:focus, textarea:focus, select:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px rgba(88,166,255,.25); }
+  textarea { min-height: 72px; resize: none; }
+  select { appearance: none; background-image: linear-gradient(45deg, transparent 50%, var(--muted) 50%), linear-gradient(135deg, var(--muted) 50%, transparent 50%);
+           background-position: calc(100% - 18px) 50%, calc(100% - 13px) 50%; background-size: 5px 5px; background-repeat: no-repeat; }
+  input[type=date] { color-scheme: dark; }
+
+  /* side card */
+  dl { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 7px 16px; margin: 0; }
+  dt { color: var(--muted); white-space: nowrap; }
+  dd { margin: 0; text-align: right; font-variant-numeric: tabular-nums; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .buttons { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin-top: 14px; }
+  button { font: inherit; font-size: 14px; padding: 9px 12px; border-radius: 8px; border: 1px solid var(--border);
+           background: var(--card-2); color: var(--text); cursor: pointer; transition: border-color .15s, background .15s; }
+  button:hover { border-color: #484f58; background: #22272e; }
+  button:active { background: #2d333b; }
+
+  .log { margin-top: 14px; height: 180px; overflow: auto; background: var(--bg); border: 1px solid var(--border-soft);
+         border-radius: 8px; padding: 8px 10px; }
+  .log div { display: flex; gap: 10px; font: 12.5px/1.6 ui-monospace, "Cascadia Mono", Consolas, monospace; color: var(--muted); white-space: nowrap; }
+  .log time { color: var(--faint); }
+  .log .tag { width: 64px; flex: none; color: var(--accent); }
+  .log .tag.focus { color: var(--green); } .log .tag.ime { color: var(--violet); } .log .tag.key { color: var(--amber); }
+  .log .empty { color: var(--faint); }
+</style>
+</head>
+<body>
+
+<header>
+  <img class="logo" src="../assets/kioskium-icon.png" alt="" aria-hidden="true">
+  <div class="brand">
+    <h1>Input test</h1>
+    <p>Every kind of form field, and the events typing produces; with an on-screen keyboard, each field asks for its own layout</p>
+  </div>
+  <div class="chips">
+    <span class="chip"><span class="dot" id="focus-dot"></span><span id="focus-chip">No field focused</span></span>
+    <span class="chip">Viewport <b id="vp-chip" class="mono">–</b></span>
+  </div>
+</header>
+
+<main class="grid">
+
+  <section class="card span-2">
+    <h2>
+      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="1.5" y="4" width="13" height="8" rx="1.5"/><path d="M4 7h1M7 7h1M10 7h2M5 9.5h6"/></svg>
+      Form fields <span class="right">input type / keyboard hint</span>
+    </h2>
+    <div class="fields">
+      <label class="field"><span>Text <code>text</code></span><input type="text" placeholder="Type here" autocomplete="off"></label>
+      <label class="field"><span>Number <code>inputmode=numeric</code></span><input type="number" inputmode="numeric" placeholder="1234"></label>
+      <label class="field"><span>Email <code>email</code></span><input type="email" inputmode="email" placeholder="name@example.com"></label>
+      <label class="field"><span>Phone <code>tel</code></span><input type="tel" inputmode="tel" placeholder="+1 555 0100"></label>
+      <label class="field"><span>Password <code>password</code></span><input type="password" placeholder="Password"></label>
+      <label class="field"><span>Search <code>search</code></span><input type="search" placeholder="Search…"></label>
+      <label class="field"><span>Web address <code>url</code></span><input type="url" inputmode="url" placeholder="https://example.com"></label>
+      <label class="field"><span>Date <code>date</code></span><input type="date"></label>
+      <label class="field"><span>Choice <code>select</code></span>
+        <select><option>Option one</option><option>Option two</option><option>Option three</option></select>
+      </label>
+      <label class="field"><span>PIN <code>inputmode=numeric</code></span><input type="password" inputmode="numeric" maxlength="6" placeholder="••••"></label>
+      <label class="field wide"><span>Notes <code>textarea</code></span><textarea placeholder="Several lines of text…"></textarea></label>
+    </div>
+  </section>
+
+  <section class="card">
+    <h2>
+      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="8" cy="8" r="6"/><circle cx="8" cy="8" r="2"/></svg>
+      Focus &amp; viewport
+    </h2>
+    <dl>
+      <dt>Focused field</dt><dd id="focused">none</dd>
+      <dt>Keyboard hint</dt><dd id="hint">–</dd>
+      <dt>Viewport</dt><dd id="vp"></dd>
+      <dt>Visual viewport</dt><dd id="vvp"></dd>
+      <dt>Keyboard space</dt><dd id="kb">–</dd>
+    </dl>
+    <div class="buttons">
+      <button type="button" onclick="document.querySelector('input[type=text]').focus()">Focus</button>
+      <button type="button" onclick="document.activeElement && document.activeElement.blur()">Blur</button>
+      <button type="button" onclick="clearLog()">Clear log</button>
+    </div>
+    <div class="log" id="log"><div class="empty">Events appear here: focus, input, keys and IME composition.</div></div>
+  </section>
+
+</main>
+
+<script>
+  const $ = id => document.getElementById(id);
+  const log = $('log');
+  let tallest = innerHeight;
+
+  function add(tag, text, cls) {
+    const empty = log.querySelector('.empty'); if (empty) empty.remove();
+    const row = document.createElement('div');
+    const time = document.createElement('time'); time.textContent = new Date().toLocaleTimeString([], { hour12: false });
+    const t = document.createElement('span'); t.className = 'tag ' + (cls || ''); t.textContent = tag;
+    const m = document.createElement('span'); m.textContent = text;
+    row.append(time, t, m); log.prepend(row);
+    while (log.children.length > 200) log.lastChild.remove();
+    console.log('input-test: ' + tag + ' ' + text);
+  }
+  function clearLog() { log.innerHTML = '<div class="empty">Log cleared.</div>'; }
+
+  function describe(el) {
+    if (!el || el === document.body) return 'none';
+    return el.tagName.toLowerCase() + (el.type && el.tagName !== 'TEXTAREA' && el.tagName !== 'SELECT' ? '[' + el.type + ']' : '');
+  }
+  function hint(el) {
+    if (!el || el === document.body) return '–';
+    return el.inputMode || (el.type && ['number', 'email', 'tel', 'url', 'search', 'password', 'date'].includes(el.type) ? el.type : 'text');
+  }
+  function setFocus(el) {
+    const name = describe(el), on = name !== 'none';
+    $('focused').textContent = name;
+    $('hint').textContent = hint(el);
+    $('focus-chip').textContent = on ? 'Focused: ' + name : 'No field focused';
+    $('focus-dot').className = 'dot' + (on ? ' on' : '');
+  }
+
+  document.addEventListener('focusin', e => { setFocus(e.target); add('focus', describe(e.target), 'focus'); });
+  document.addEventListener('focusout', e => { setTimeout(() => setFocus(document.activeElement), 0); add('blur', describe(e.target), 'focus'); });
+  document.addEventListener('input', e => add('input', '"' + (e.target.type === 'password' ? '•'.repeat((e.target.value || '').length) : (e.target.value || '')).slice(-30) + '"'));
+  document.addEventListener('keydown', e => add('key', e.key + (e.isComposing ? ' (composing)' : ''), 'key'));
+  document.addEventListener('compositionstart', () => add('ime', 'composition start', 'ime'));
+  document.addEventListener('compositionend', e => add('ime', 'composition end "' + e.data + '"', 'ime'));
+
+  // An on-screen keyboard that shrinks the window (or the visual viewport) shows up as a drop in the
+  // viewport height while a field has focus: that is the space the keyboard takes.
+  function report() {
+    tallest = Math.max(tallest, innerHeight);
+    $('vp').textContent = $('vp-chip').textContent = innerWidth + ' × ' + innerHeight;
+    $('vvp').textContent = window.visualViewport ? Math.round(visualViewport.width) + ' × ' + Math.round(visualViewport.height) : '–';
+    const used = tallest - innerHeight;
+    $('kb').textContent = used > 40 ? used + ' px' : 'none';
+  }
+  report();
+  addEventListener('resize', report);
+  if (window.visualViewport) visualViewport.addEventListener('resize', report);
+</script>
+</body>
+</html>

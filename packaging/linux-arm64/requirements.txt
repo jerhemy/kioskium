@@ -1,0 +1,10 @@
+# Exact versions for the embedded aarch64 build (Python 3.9 in Ubuntu 20.04, glibc 2.31).
+# PySide6 6.8.0.2 is the newest release with manylinux_2_31 aarch64 wheels, so the bundle
+# runs on images with glibc >= 2.31 (e.g. Yocto hardknott, glibc 2.33). Newer PySide6
+# releases need glibc 2.39.
+shiboken6==6.8.0.2
+PySide6-Essentials==6.8.0.2
+PySide6-Addons==6.8.0.2
+pyinstaller==6.22.3
+setuptools-scm==8.3.1  # writes src/kioskium/_version.py from the git tags
+setuptools==80.9.0      # setuptools-scm needs >= 61; Ubuntu 20.04 ships 45
