@@ -19,4 +19,4 @@ pluggy==1.6.0
 iniconfig==2.3.1
 Pygments==2.21.0
 colorama==0.4.6
-ruff==0.17.0
+ruff==0.17.3
